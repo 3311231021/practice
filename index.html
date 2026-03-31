@@ -6,36 +6,130 @@
   <title>稅務法規題庫</title>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
+      margin: 0;
       font-family: "Microsoft JhengHei", Arial, sans-serif;
+      background: #f5f6f8;
+      color: #222;
+    }
+
+    .container {
       max-width: 1000px;
       margin: 0 auto;
-      padding: 24px;
-      background: #f7f7f7;
-      color: #222;
+      padding: 24px 16px 48px;
     }
 
     h1 {
       text-align: center;
-      margin-bottom: 24px;
+      margin: 24px 0 32px;
+      font-size: 52px;
+      font-weight: 700;
+    }
+
+    h2 {
+      margin-top: 0;
     }
 
     .card {
       background: #fff;
       border: 1px solid #ddd;
-      border-radius: 12px;
-      padding: 20px;
+      border-radius: 16px;
+      padding: 24px;
       margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .chapter-item {
+      margin: 12px 0;
+      font-size: 20px;
+    }
+
+    .chapter-item label {
+      cursor: pointer;
+    }
+
+    .controls {
+      margin-top: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    input[type="number"] {
+      width: 110px;
+      padding: 10px 12px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      background: #4caf50;
+      color: white;
+      padding: 12px 18px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #449d48;
+    }
+
+    button.secondary {
+      background: #888;
+    }
+
+    button.secondary:hover {
+      background: #666;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      font-size: 18px;
+      margin-bottom: 12px;
+    }
+
+    .progress {
+      width: 100%;
+      height: 14px;
+      background: #e6e6e6;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: #4caf50;
+      width: 0%;
+    }
+
+    .question-text {
+      font-size: 28px;
+      line-height: 1.8;
+      margin-bottom: 18px;
     }
 
     .option {
       border: 1px solid #ccc;
-      border-radius: 10px;
-      padding: 14px;
+      border-radius: 12px;
+      padding: 14px 16px;
       margin: 10px 0;
       cursor: pointer;
-      transition: 0.2s;
       background: #fff;
+      font-size: 18px;
+      line-height: 1.6;
+      transition: 0.2s;
     }
 
     .option:hover {
@@ -57,76 +151,55 @@
       border-color: #d9534f;
     }
 
-    button {
-      padding: 10px 16px;
-      border: none;
-      border-radius: 8px;
-      background: #4caf50;
-      color: white;
-      cursor: pointer;
-      margin-right: 8px;
-      margin-top: 8px;
-      font-size: 16px;
-    }
-
-    button:hover {
-      background: #449d48;
-    }
-
-    button.secondary {
-      background: #888;
-    }
-
-    button.secondary:hover {
-      background: #666;
-    }
-
-    .topbar {
+    .actions {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-      font-size: 18px;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
     }
 
-    .progress {
-      width: 100%;
-      height: 12px;
-      background: #e5e5e5;
-      border-radius: 8px;
-      overflow: hidden;
-      margin-bottom: 20px;
+    .result-block p {
+      margin: 8px 0;
+      line-height: 1.7;
     }
 
-    .progress-bar {
-      height: 100%;
-      background: #4caf50;
-      width: 0%;
-    }
-
-    .chapter-item {
-      margin-bottom: 10px;
-    }
-
-    input[type="number"] {
-      padding: 8px;
-      width: 100px;
+    .empty-message {
+      color: #666;
       font-size: 16px;
-      margin-left: 8px;
     }
 
-    .result-block {
-      margin-bottom: 16px;
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 38px;
+      }
+
+      .question-text {
+        font-size: 22px;
+      }
+
+      .chapter-item {
+        font-size: 18px;
+      }
+
+      .option {
+        font-size: 17px;
+      }
+
+      .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
     }
   </style>
 </head>
 <body>
+  <div class="container">
+    <h1>📘 稅務法規題庫</h1>
 
-  <h1>📘 稅務法規題庫</h1>
-
-  <div id="menu" class="card"></div>
-  <div id="quiz" style="display:none;"></div>
-  <div id="result" style="display:none;"></div>
+    <div id="menu" class="card"></div>
+    <div id="quiz" style="display:none;"></div>
+    <div id="result" style="display:none;"></div>
+  </div>
 
   <script>
     let allQuestions = [];
@@ -139,11 +212,13 @@
       if (!res.ok) {
         throw new Error(`無法讀取檔案：${path}`);
       }
+
       const text = await res.text();
       const parsed = Papa.parse(text, {
         header: true,
         skipEmptyLines: true
       });
+
       return parsed.data;
     }
 
@@ -151,31 +226,47 @@
       try {
         const chapters = await loadCSV("./data/chapters.csv");
 
+        if (!chapters.length) {
+          document.getElementById("menu").innerHTML = `
+            <h2>選擇章節</h2>
+            <p class="empty-message">目前沒有章節資料，請先建立 data/chapters.csv。</p>
+          `;
+          return;
+        }
+
         let html = `<h2>選擇章節</h2>`;
 
         chapters.forEach(ch => {
+          const chapterId = (ch.id || "").trim();
+          const chapterTitle = (ch.title || "").trim();
+
+          if (!chapterId || !chapterTitle) return;
+
           html += `
             <div class="chapter-item">
-              <input type="checkbox" id="${ch.id}" value="${ch.id}">
-              <label for="${ch.id}">${ch.title}（${ch.count}題）</label>
+              <input type="checkbox" id="${chapterId}" value="${chapterId}">
+              <label for="${chapterId}">${chapterTitle}</label>
             </div>
           `;
         });
 
         html += `
           <hr>
-          <div style="margin: 12px 0;">
-            題目數量：
+          <div class="controls">
+            <label for="count">隨機題數：</label>
             <input type="number" id="count" value="10" min="1">
+            <button onclick="startQuiz('random')">隨機出題</button>
+            <button onclick="startQuiz('all')">全部作答</button>
+            <button class="secondary" onclick="loadWrong()">錯題本</button>
           </div>
-          <button onclick="startQuiz('random')">隨機出題</button>
-          <button onclick="startQuiz('all')">全部作答</button>
-          <button class="secondary" onclick="loadWrong()">錯題本</button>
         `;
 
         document.getElementById("menu").innerHTML = html;
       } catch (err) {
-        document.getElementById("menu").innerHTML = `<p>載入章節失敗：${err.message}</p>`;
+        document.getElementById("menu").innerHTML = `
+          <h2>選擇章節</h2>
+          <p class="empty-message">載入章節失敗：${err.message}</p>
+        `;
       }
     }
 
@@ -194,6 +285,11 @@
         for (const chapter of selected) {
           const data = await loadCSV(`./data/${chapter}.csv`);
           allQuestions = allQuestions.concat(data);
+        }
+
+        if (!allQuestions.length) {
+          alert("找不到題目資料");
+          return;
         }
 
         if (mode === "random") {
@@ -234,7 +330,7 @@
         </div>
 
         <div class="card">
-          <p style="font-size: 22px; line-height: 1.7;">${q.question || "題目讀取失敗"}</p>
+          <div class="question-text">${q.question || "題目讀取失敗"}</div>
       `;
 
       ["A", "B", "C", "D"].forEach(opt => {
@@ -247,10 +343,14 @@
         `;
       });
 
-      html += `</div>
-        <button onclick="prevQuestion()">上一題</button>
-        <button onclick="nextQuestion()">下一題</button>
-        <button onclick="submitQuiz()">交卷</button>
+      html += `
+        </div>
+
+        <div class="actions">
+          <button class="secondary" onclick="prevQuestion()">上一題</button>
+          <button class="secondary" onclick="nextQuestion()">下一題</button>
+          <button onclick="submitQuiz()">交卷</button>
+        </div>
       `;
 
       document.getElementById("quiz").innerHTML = html;
@@ -304,7 +404,7 @@
         const cls = answers[i] === q.answer ? "correct" : "wrong";
 
         html += `
-          <div class="card ${cls} result-block">
+          <div class="card result-block ${cls}">
             <p><strong>${i + 1}. ${q.question}</strong></p>
             <p>你的答案：${user}</p>
             <p>正確答案：${correct}</p>
