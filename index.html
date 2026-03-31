@@ -208,15 +208,24 @@
     let answers = [];
 
     async function loadCSV(path) {
-      const res = await fetch(path);
+      const res = await fetch(path, { cache: "no-store" });
       if (!res.ok) {
         throw new Error(`無法讀取檔案：${path}`);
       }
 
       const text = await res.text();
+
       const parsed = Papa.parse(text, {
         header: true,
-        skipEmptyLines: true
+        skipEmptyLines: true,
+        transformHeader: (header) => {
+          if (typeof header !== "string") return header;
+          return header.replace(/^\uFEFF/, "").trim();
+        },
+        transform: (value) => {
+          if (typeof value !== "string") return value;
+          return value.trim();
+        }
       });
 
       return parsed.data;
@@ -400,7 +409,13 @@
       questions.forEach((q, i) => {
         const user = answers[i] || "未作答";
         const correct = q.answer || "-";
-        const explanation = q.explanation || "-";
+
+        const explanation =
+          q.explanation ??
+          q[" explanation"] ??
+          q["﻿explanation"] ??
+          "-";
+
         const cls = answers[i] === q.answer ? "correct" : "wrong";
 
         html += `
@@ -408,7 +423,7 @@
             <p><strong>${i + 1}. ${q.question}</strong></p>
             <p>你的答案：${user}</p>
             <p>正確答案：${correct}</p>
-            <p>解析：${explanation}</p>
+            <p>解析：${explanation || "-"}</p>
           </div>
         `;
       });
