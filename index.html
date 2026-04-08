@@ -52,6 +52,12 @@
       cursor: pointer;
     }
 
+    .chapter-count {
+      color: #666;
+      font-size: 16px;
+      margin-left: 6px;
+    }
+
     .controls {
       margin-top: 20px;
       display: flex;
@@ -168,6 +174,17 @@
       font-size: 16px;
     }
 
+    .info-box {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: #eef7ff;
+      border: 1px solid #cfe6ff;
+      color: #2a5c88;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
     @media (max-width: 768px) {
       h1 {
         font-size: 38px;
@@ -218,17 +235,44 @@
       const parsed = Papa.parse(text, {
         header: true,
         skipEmptyLines: true,
-        transformHeader: (header) => {
-          if (typeof header !== "string") return header;
-          return header.replace(/^\uFEFF/, "").trim();
-        },
-        transform: (value) => {
-          if (typeof value !== "string") return value;
-          return value.trim();
-        }
+        transformHeader: (header) => String(header).replace(/^\uFEFF/, "").trim(),
+        transform: (value) => typeof value === "string" ? value.trim() : value
       });
 
-      return parsed.data;
+      if (parsed.errors && parsed.errors.length > 0) {
+        console.warn("CSV 解析警告：", path, parsed.errors);
+      }
+
+      const cleanedRows = parsed.data.map(row => {
+        const cleaned = {};
+        Object.keys(row || {}).forEach(key => {
+          const cleanKey = String(key).replace(/^\uFEFF/, "").trim();
+          const value = row[key];
+          cleaned[cleanKey] = typeof value === "string" ? value.trim() : value;
+        });
+        return cleaned;
+      });
+
+      return cleanedRows;
+    }
+
+    function normalizeQuestionRow(row) {
+      return {
+        id: row.id || "",
+        question: row.question || "",
+        optionA: row.optionA || "",
+        optionB: row.optionB || "",
+        optionC: row.optionC || "",
+        optionD: row.optionD || "",
+        answer: row.answer || "",
+        explanation: row.explanation || ""
+      };
+    }
+
+    function validQuestionRows(rows) {
+      return rows
+        .map(normalizeQuestionRow)
+        .filter(row => row.question !== "");
     }
 
     async function loadChapters() {
@@ -245,19 +289,27 @@
 
         let html = `<h2>選擇章節</h2>`;
 
-        chapters.forEach(ch => {
+        for (const ch of chapters) {
           const chapterId = (ch.id || "").trim();
           const chapterTitle = (ch.title || "").trim();
+          if (!chapterId || !chapterTitle) continue;
 
-          if (!chapterId || !chapterTitle) return;
+          let countText = "";
+          try {
+            const data = await loadCSV(`./data/${chapterId}.csv`);
+            const validRows = validQuestionRows(data);
+            countText = `<span class="chapter-count">（${validRows.length}題）</span>`;
+          } catch (e) {
+            countText = `<span class="chapter-count">（讀取失敗）</span>`;
+          }
 
           html += `
             <div class="chapter-item">
               <input type="checkbox" id="${chapterId}" value="${chapterId}">
-              <label for="${chapterId}">${chapterTitle}</label>
+              <label for="${chapterId}">${chapterTitle}${countText}</label>
             </div>
           `;
-        });
+        }
 
         html += `
           <hr>
@@ -267,6 +319,11 @@
             <button onclick="startQuiz('random')">隨機出題</button>
             <button onclick="startQuiz('all')">全部作答</button>
             <button class="secondary" onclick="loadWrong()">錯題本</button>
+          </div>
+
+          <div class="info-box">
+            若「全部作答」仍只出現 10 題，通常代表 CSV 在第 11 題附近格式有問題。<br>
+            建議用 Excel 重新另存為「CSV UTF-8（逗號分隔）」。
           </div>
         `;
 
@@ -293,8 +350,12 @@
 
         for (const chapter of selected) {
           const data = await loadCSV(`./data/${chapter}.csv`);
-          allQuestions = allQuestions.concat(data);
+          const validRows = validQuestionRows(data);
+          allQuestions = allQuestions.concat(validRows);
         }
+
+        console.log("實際讀到題目數：", allQuestions.length);
+        console.log(allQuestions);
 
         if (!allQuestions.length) {
           alert("找不到題目資料");
@@ -409,13 +470,7 @@
       questions.forEach((q, i) => {
         const user = answers[i] || "未作答";
         const correct = q.answer || "-";
-
-        const explanation =
-          q.explanation ??
-          q[" explanation"] ??
-          q["﻿explanation"] ??
-          "-";
-
+        const explanation = q.explanation || "-";
         const cls = answers[i] === q.answer ? "correct" : "wrong";
 
         html += `
@@ -423,7 +478,7 @@
             <p><strong>${i + 1}. ${q.question}</strong></p>
             <p>你的答案：${user}</p>
             <p>正確答案：${correct}</p>
-            <p>解析：${explanation || "-"}</p>
+            <p>解析：${explanation}</p>
           </div>
         `;
       });
