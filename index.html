@@ -461,29 +461,36 @@
     }
 
     function showResult(score) {
-      document.getElementById("quiz").style.display = "none";
-      document.getElementById("result").style.display = "block";
+  document.getElementById("quiz").style.display = "none";
+  document.getElementById("result").style.display = "block";
+  
+  let html = `<div class="card"><h2>分數：${score} / ${questions.length}</h2></div>`;
+  
+  questions.forEach((q, i) => {
+    const userLetter = answers[i]; // 使用者選的字母
+    const correctLetter = q.answer; // 正確答案的字母
+    
+    // 取得選項的完整文字內容
+    const userText = userLetter ? `${userLetter} ${q['option' + userLetter] || ""}` : "未作答";
+    const correctText = correctLetter ? `${correctLetter} ${q['option' + correctLetter] || ""}` : "-";
+    
+    const explanation = q.explanation || "-";
+    const cls = userLetter === correctLetter ? "correct" : "wrong";
+    
+    html += `
+    <div class="card result-block ${cls}">
+      <p><strong>${i + 1}. ${q.question}</strong></p>
+      <p>你的答案：${userText}</p>
+      <p>正確答案：${correctText}</p>
+      <p>解析：${explanation}</p>
+    </div>
+    `;
+  });
+  
+  html += `<button onclick="location.reload()">回首頁</button>`;
+  document.getElementById("result").innerHTML = html;
+}
 
-      let html = `<div class="card"><h2>分數：${score} / ${questions.length}</h2></div>`;
-
-      questions.forEach((q, i) => {
-        const user = answers[i] || "未作答";
-        const correct = q.answer || "-";
-        const explanation = q.explanation || "-";
-        const cls = answers[i] === q.answer ? "correct" : "wrong";
-
-        html += `
-          <div class="card result-block ${cls}">
-            <p><strong>${i + 1}. ${q.question}</strong></p>
-            <p>你的答案：${user}</p>
-            <p>正確答案：${correct}</p>
-            <p>解析：${explanation}</p>
-          </div>
-        `;
-      });
-
-      html += `<button onclick="location.reload()">回首頁</button>`;
-      document.getElementById("result").innerHTML = html;
     }
 
     function loadWrong() {
