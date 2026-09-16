@@ -49,3 +49,7 @@ code{background:#e6eff4;padding:.1rem .35rem;border-radius:4px}
   .option{min-height:70px;padding:18px 16px}
   .quiz-top{font-size:.96rem}
 }
+.option.selected {
+  outline: 3px solid currentColor;
+  font-weight: 700;
+}
